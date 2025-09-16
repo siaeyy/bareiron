@@ -1116,7 +1116,6 @@ int sc_systemChat (int client_fd, char* message, uint16_t len) {
 
 // C->S Chat Message
 int cs_chat (int client_fd) {
-
   readString(client_fd);
 
   PlayerData *player;
@@ -1127,8 +1126,21 @@ int cs_chat (int client_fd) {
 
   // To be safe, cap messages to 32 bytes before the buffer length
   if (message_content_len > 224) {
-    recv_buffer[224] = '\0';
-    message_content_len = 224;
+    size_t last_valid_len = 224;
+
+    // For valid capping, check until the limit is valid,
+    // so it's not a continuation byte
+    while (last_valid_len > 0 && (recv_buffer[last_valid_len] & 0xC0) == 0x80) {
+      last_valid_len--;
+    }
+
+    // Fallback for the case that first byte is also a continuation byte
+    if ((recv_buffer[0] & 0xC0) == 0x80) {
+      last_valid_len = 0;
+    }
+
+    recv_buffer[last_valid_len] = '\0';
+    message_content_len = last_valid_len;
   }
 
   // Shift message contents forward to make space for player name tag
