@@ -1152,11 +1152,51 @@ int cs_chat (int client_fd) {
   recv_buffer[name_len + 1] = '>';
   recv_buffer[name_len + 2] = ' ';
 
+  char* message = (char *)recv_buffer;
+  uint16_t message_len = message_content_len + name_len + 3;
+
+  // 16 byte for player name
+  // 3 byte for styling
+  // 1/2/3 byte/s value in utf-8 format equals 1 element
+  uint32_t utf8_decode_buf[224 + 16 + 3];
+  // 1 decoded utf-8 element equals 1/2/3/6 byte/s
+  uint8_t mutf8_encode_buf[1344 + 16 + 3];
+  
+  ssize_t decode_len = utf8_decode(message, utf8_decode_buf);
+
+  if (decode_len == -1) {
+    printf("A problem occurred while decoding a chat message!\n");
+    printf("Message: %s\n", message);
+
+    printf("Message (Hex Dump): ");
+    for (int i = 0; i < strlen(message); ++i) {
+      printf("%02X ", (unsigned char)message[i]);
+    }
+    printf("\n\n");
+
+    return 1; // hmm
+  }
+
+  ssize_t encode_len = mutf8_encode(utf8_decode_buf, mutf8_encode_buf, decode_len);
+
+  if (encode_len == -1) {
+    printf("A problem occurred while encoding a chat message!\n");
+    printf("Message: %s\n", message);
+
+    printf("Message (Hex Dump): ");
+    for (int i = 0; i < strlen(message); ++i) {
+      printf("%02X ", (unsigned char)message[i]);
+    }
+    printf("\n\n");
+
+    return 1; // hmm
+  }
+
   // Forward message to all connected players
   for (int i = 0; i < MAX_PLAYERS; i ++) {
     if (player_data[i].client_fd == -1) continue;
     if (player_data[i].flags & 0x20) continue;
-    sc_systemChat(player_data[i].client_fd, (char *)recv_buffer, message_content_len + name_len + 3);
+    sc_systemChat(player_data[i].client_fd, mutf8_encode_buf, encode_len);
   }
 
   readUint64(client_fd); // Ignore timestamp
