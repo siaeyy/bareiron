@@ -1,4 +1,6 @@
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
@@ -236,6 +238,80 @@ uint64_t splitmix64 (uint64_t state) {
   z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
   z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
   return z ^ (z >> 31);
+}
+
+ssize_t utf8_decode(char* source, uint32_t* buf) {
+  size_t i = 0;
+  size_t offset = 0;
+  
+  while (true) {
+    unsigned char start = (unsigned char)source[i];
+
+    if (start == '\0') {
+      break;
+    }
+
+    uint32_t codepoint = 0;
+    short pair_count;
+
+    /*
+     * Try to find out pair count by start byte,
+     * pair count above 4 is out of range
+     *
+     * 110.. -> 2
+     * 1110.. -> 3
+     * 11110.. -> 4
+     */
+    if (start < 0x80) {
+      pair_count = 1;
+      codepoint = start;
+    }
+    else if ((start & 0xE0) == 0xC0) {
+      pair_count = 2;
+      codepoint = start & 0x1F;
+    }
+    else if ((start & 0xF0) == 0xE0) {
+      pair_count = 3;
+      codepoint = start & 0x0F;
+    }
+    else if ((start & 0xF8) == 0xF0) {
+      pair_count = 4;
+      codepoint = start & 0x07;
+    }
+    else {
+      return -1;
+    }
+
+    // Process every pair over the codepoint
+    for (int j = 1; j < pair_count; ++j) {
+      unsigned char pair = (unsigned char)source[i + j];
+
+      if (pair == '\0') {
+        return -1; // Pairs missing for the codepoint
+      }      
+      
+      if ((pair & 0xC0) != 0x80) {
+        return -1; // Pair's prefix bit flag is invalid 
+      }
+      
+      codepoint = (codepoint << 6) | (pair & 0x3F);
+    }
+
+    // Check if the codepoint is within its range
+    if ((pair_count == 2 && codepoint < 0x80) ||
+        (pair_count == 3 && codepoint < 0x800) ||
+        (pair_count == 4 && codepoint < 0x10000) ||
+        (codepoint >= 0xD800 && codepoint <= 0xDFFF) ||
+        (codepoint > 0x10FFFF)) {
+      return -1;
+    }
+
+    buf[offset] = codepoint;
+    i += pair_count;
+    offset++;
+  }
+
+  return offset;
 }
 
 #ifndef ESP_PLATFORM
