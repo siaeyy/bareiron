@@ -1122,17 +1122,17 @@ int cs_chat (int client_fd) {
   PlayerData *player;
   if (getPlayerData(client_fd, &player)) return 1;
 
-  size_t message_len = strlen((char *)recv_buffer);
+  size_t message_content_len = strlen((char *)recv_buffer);
   uint8_t name_len = strlen(player->name);
 
   // To be safe, cap messages to 32 bytes before the buffer length
-  if (message_len > 224) {
+  if (message_content_len > 224) {
     recv_buffer[224] = '\0';
-    message_len = 224;
+    message_content_len = 224;
   }
 
   // Shift message contents forward to make space for player name tag
-  memmove(recv_buffer + name_len + 3, recv_buffer, message_len + 1);
+  memmove(recv_buffer + name_len + 3, recv_buffer, message_content_len + 1);
   // Copy player name to index 1
   memcpy(recv_buffer + 1, player->name, name_len);
   // Surround player name with brackets and a space
@@ -1144,7 +1144,7 @@ int cs_chat (int client_fd) {
   for (int i = 0; i < MAX_PLAYERS; i ++) {
     if (player_data[i].client_fd == -1) continue;
     if (player_data[i].flags & 0x20) continue;
-    sc_systemChat(player_data[i].client_fd, (char *)recv_buffer, message_len + name_len + 3);
+    sc_systemChat(player_data[i].client_fd, (char *)recv_buffer, message_content_len + name_len + 3);
   }
 
   readUint64(client_fd); // Ignore timestamp
