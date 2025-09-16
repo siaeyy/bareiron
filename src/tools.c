@@ -314,6 +314,85 @@ ssize_t utf8_decode(char* source, uint32_t* buf) {
   return offset;
 }
 
+ssize_t mutf8_encode(const uint32_t* source, uint8_t* buf, size_t len) {
+  size_t offset = 0;
+
+  for (size_t i = 0; i < len; i++) {
+    uint32_t char_code = source[i];
+
+    /*
+     * Values in range of 0x0001 to 0x007F is represented are single byte
+     *
+     * Byte: 0..<6-0 bits>
+     */
+     if (char_code != 0x00 && char_code <= 0x7F) {
+      buf[offset] = (uint8_t)char_code;
+
+      offset++;
+      continue;
+    }
+    /*
+     * Null value (0x00) and values in range of 0x0080 to 0x07FF are represented as two bytes
+     *
+     * Byte 1: 110..<10-6 bits>
+     * Byte 2: 10..<5-0 bits>
+     */
+    else if (char_code == 0x0000 || char_code <= 0x07FF) {
+      uint8_t byte1 = 0xC0 | ((char_code >> 6) & 0x1F);
+      uint8_t byte2 = 0x80 | (char_code & 0x3F);
+
+      buf[offset] = byte1;
+      buf[offset + 1] = byte2;
+
+      offset += 2;
+      continue;
+    }
+    else if (char_code >= 0x10FFFF) {
+      return -1; // Invalid MUTF-8 value
+    }
+
+    /*
+     * Values in range of 0x0800 to 0xFFFF are represented as three bytes
+     *
+     * Byte 1: 1110..<15-12 bits>
+     * Byte 2: 10..<11-6 bits>
+     * Byte 3: 10..<5-6 bits>
+     *
+     * Supplementary characters are represented in the form of surrogate pairs,
+     * that means values that greater than 0x10000 are represented as two pairs of three bytes
+     * with the structure shown above
+     */
+    uint32_t temp_code;
+    uint8_t should_surrogate = false;
+
+    if (char_code >= 0x10000) {
+      should_surrogate = true;
+      temp_code = char_code - 0x10000;
+      char_code = 0xD800 | ((temp_code >> 10) & 0x03FF);
+    }
+      
+    surrogate:
+
+    uint8_t byte1 = 0xE0 | ((char_code >> 12) & 0x0F);
+    uint8_t byte2 = 0x80 | ((char_code >> 6) & 0x3F);
+    uint8_t byte3 = 0x80 | (char_code & 0x3F);
+
+    buf[offset] = byte1;
+    buf[offset + 1] = byte2;
+    buf[offset + 2] = byte3;
+    
+    offset += 3;
+
+    if (should_surrogate) {
+      char_code = 0xDC00 | (temp_code & 0x3FF);
+      should_surrogate = false;
+      goto surrogate;
+    }
+  }
+
+  return offset;
+}
+
 #ifndef ESP_PLATFORM
 // Returns system time in microseconds.
 // On ESP-IDF, this is available in "esp_timer.h", and returns time *since
