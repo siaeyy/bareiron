@@ -369,23 +369,24 @@ ssize_t mutf8_encode(const uint32_t* source, uint8_t* buf, size_t len) {
       char_code = 0xD800 | ((temp_code >> 10) & 0x03FF);
     }
       
-    surrogate:
+    do {
+      uint8_t byte1 = 0xE0 | ((char_code >> 12) & 0x0F);
+      uint8_t byte2 = 0x80 | ((char_code >> 6) & 0x3F);
+      uint8_t byte3 = 0x80 | (char_code & 0x3F);
 
-    uint8_t byte1 = 0xE0 | ((char_code >> 12) & 0x0F);
-    uint8_t byte2 = 0x80 | ((char_code >> 6) & 0x3F);
-    uint8_t byte3 = 0x80 | (char_code & 0x3F);
-
-    buf[offset] = byte1;
-    buf[offset + 1] = byte2;
-    buf[offset + 2] = byte3;
+      buf[offset] = byte1;
+      buf[offset + 1] = byte2;
+      buf[offset + 2] = byte3;
     
-    offset += 3;
+      offset += 3;
 
-    if (should_surrogate) {
-      char_code = 0xDC00 | (temp_code & 0x3FF);
-      should_surrogate = false;
-      goto surrogate;
-    }
+      if (should_surrogate) {
+        should_surrogate = false;
+        char_code = 0xDC00 | (temp_code & 0x3FF);
+      } else {
+        break;
+      }
+    } while (true);
   }
 
   return offset;
