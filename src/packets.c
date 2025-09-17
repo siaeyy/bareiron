@@ -1155,6 +1155,7 @@ int cs_chat (int client_fd) {
   char* message = (char *)recv_buffer;
   uint16_t message_len = message_content_len + name_len + 3;
 
+  #ifdef ENABLE_UNICODE_SUPPORT
   // 16 byte for player name
   // 3 byte for styling
   // 1/2/3 byte/s value in utf-8 format equals 1 element
@@ -1191,12 +1192,17 @@ int cs_chat (int client_fd) {
 
     return 1; // hmm
   }
+  #endif
 
   // Forward message to all connected players
   for (int i = 0; i < MAX_PLAYERS; i ++) {
     if (player_data[i].client_fd == -1) continue;
     if (player_data[i].flags & 0x20) continue;
+    #ifdef ENABLE_UNICODE_SUPPORT
     sc_systemChat(player_data[i].client_fd, mutf8_encode_buf, encode_len);
+    #else
+    sc_systemChat(player_data[i].client_fd, message, message_len);
+    #endif
   }
 
   readUint64(client_fd); // Ignore timestamp
