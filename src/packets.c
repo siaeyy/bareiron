@@ -1192,6 +1192,29 @@ int cs_chat (int client_fd) {
 
     return 1; // hmm
   }
+  #else
+  uint16_t filtered_message_len = 0;
+
+  for (uint16_t i = 0; i < message_len; i++) {
+    unsigned char current_byte = message[i];
+
+    char filtered_char;
+    if (current_byte < 0x80) {
+      filtered_char = current_byte;
+    }
+    else if ((current_byte & 0xC0) != 0x80) {
+      filtered_char = '?';
+    }
+    else {
+      continue;
+    }
+
+    message[filtered_message_len] = filtered_char;
+    filtered_message_len++;
+  }
+
+  message[filtered_message_len] = '\0';
+  message_len = filtered_message_len;
   #endif
 
   // Forward message to all connected players
