@@ -1813,39 +1813,38 @@ void handleServerTick (int64_t time_since_last_tick) {
     // Holds the block above the target block, i.e. the "head" block
     uint8_t block_above = getBlockAt(new_x, new_y + 1, new_z);
 
-    if ( // Validate movement on X axis
-      new_x != old_x &&
+    // Validate movement on X axis
+    if (new_x != old_x && (
       !isPassableBlock(getBlockAt(new_x, new_y + 1, old_z)) ||
       (
         !isPassableBlock(getBlockAt(new_x, new_y, old_z)) &&
         !isPassableBlock(getBlockAt(new_x, new_y + 2, old_z))
       )
-    ) {
+    )) {
       new_x = old_x;
       block = getBlockAt(old_x, new_y, new_z);
       block_above = getBlockAt(old_x, new_y + 1, new_z);
     }
-    if ( // Validate movement on Z axis
-      new_z != old_z &&
+    // Validate movement on Z axis
+    if (new_z != old_z && (
       !isPassableBlock(getBlockAt(old_x, new_y + 1, new_z)) ||
       (
         !isPassableBlock(getBlockAt(old_x, new_y, new_z)) &&
         !isPassableBlock(getBlockAt(old_x, new_y + 2, new_z))
       )
-    ) {
+    )) {
       new_z = old_z;
       block = getBlockAt(new_x, new_y, old_z);
       block_above = getBlockAt(new_x, new_y + 1, old_z);
     }
-
-    if ( // Validate diagonal movement
-      new_x != old_x && new_z != old_z &&
+    // Validate diagonal movement
+    if (new_x != old_x && new_z != old_z && (
       !isPassableBlock(block_above) ||
       (
         !isPassableBlock(block) &&
         !isPassableBlock(getBlockAt(new_x, new_y + 2, new_z))
       )
-    ) {
+    )) {
       // We know that movement along just one axis is fine thanks to the
       // checks above, pick one based on proximity.
       int dist_x = abs(old_x - closest_player->x);
