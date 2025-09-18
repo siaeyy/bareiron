@@ -658,10 +658,8 @@ int cs_clickContainer (int client_fd) {
     count = (uint8_t)readVarInt(client_fd);
 
     // ignore components
-    tmp = readVarInt(client_fd);
-    recv_all(client_fd, recv_buffer, tmp, false);
-    tmp = readVarInt(client_fd);
-    recv_all(client_fd, recv_buffer, tmp, false);
+    readLengthPrefixedData(client_fd);
+    readLengthPrefixedData(client_fd);
 
     if (count > 0 && apply_changes) {
       *p_item = item;
@@ -691,10 +689,8 @@ int cs_clickContainer (int client_fd) {
     player->flagval_16 = readVarInt(client_fd);
     player->flagval_8 = readVarInt(client_fd);
     // ignore components
-    tmp = readVarInt(client_fd);
-    recv_all(client_fd, recv_buffer, tmp, false);
-    tmp = readVarInt(client_fd);
-    recv_all(client_fd, recv_buffer, tmp, false);
+    readLengthPrefixedData(client_fd);
+    readLengthPrefixedData(client_fd);
   } else {
     player->flagval_16 = 0;
     player->flagval_8 = 0;
@@ -1117,19 +1113,14 @@ int sc_systemChat (int client_fd, char* message, uint16_t len) {
 // C->S Chat Message
 int cs_chat (int client_fd) {
 
-  readString(client_fd);
+  // To be safe, cap messages to 32 bytes before the buffer length
+  readStringN(client_fd, 224);
 
   PlayerData *player;
   if (getPlayerData(client_fd, &player)) return 1;
 
   size_t message_len = strlen((char *)recv_buffer);
   uint8_t name_len = strlen(player->name);
-
-  // To be safe, cap messages to 32 bytes before the buffer length
-  if (message_len > 224) {
-    recv_buffer[224] = '\0';
-    message_len = 224;
-  }
 
   if (recv_buffer[0] != '!') { // Standard chat message
 
