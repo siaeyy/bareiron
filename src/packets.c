@@ -1145,7 +1145,7 @@ int cs_chat (int client_fd) {
 
   // Handle chat commands
 
-  if (!strncmp(recv_buffer, "!msg", 4)) {
+  if (!strncmp((char *)recv_buffer, "!msg", 4)) {
 
     int target_offset = 5;
     int target_end_offset = 0;
@@ -1177,7 +1177,7 @@ int cs_chat (int client_fd) {
     int name_len = strlen(player->name);
     int text_len = message_len - text_offset;
     memmove(recv_buffer + name_len + 24, recv_buffer + text_offset, text_len);
-    snprintf(recv_buffer, sizeof(recv_buffer), "§7§o%s whispers to you:", player->name);
+    snprintf((char *)recv_buffer, sizeof(recv_buffer), "§7§o%s whispers to you:", player->name);
     recv_buffer[name_len + 23] = ' ';
     // Send message to target player
     sc_systemChat(target->client_fd, (char *)recv_buffer, (uint16_t)(name_len + 24 + text_len));
@@ -1185,7 +1185,7 @@ int cs_chat (int client_fd) {
     // Format output for sending player
     int target_len = target_end_offset - target_offset;
     memmove(recv_buffer + target_len + 23, recv_buffer + name_len + 24, text_len);
-    snprintf(recv_buffer, sizeof(recv_buffer), "§7§oYou whisper to %s:", target->name);
+    snprintf((char *)recv_buffer, sizeof(recv_buffer), "§7§oYou whisper to %s:", target->name);
     recv_buffer[target_len + 22] = ' ';
     // Report back to sending player
     sc_systemChat(client_fd, (char *)recv_buffer, (uint16_t)(target_len + 23 + text_len));
@@ -1193,7 +1193,7 @@ int cs_chat (int client_fd) {
     goto cleanup;
   }
 
-  if (!strncmp(recv_buffer, "!help", 5)) {
+  if (!strncmp((char *)recv_buffer, "!help", 5)) {
     // Send command guide
     const char help_msg[] = "§7Commands:\n"
     "  !msg <player> <message> - Send a private message\n"
