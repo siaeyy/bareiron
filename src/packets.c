@@ -1122,7 +1122,7 @@ int cs_chat (int client_fd) {
   size_t message_content_len = strlen((char *)recv_buffer);
   uint8_t name_len = strlen(player->name);
 
-  size_t last_valid_len = 224;
+  size_t last_valid_len = message_content_len;
 
   // For valid capping, check until the limit is valid,
   // so it's not a continuation byte
