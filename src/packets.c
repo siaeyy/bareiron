@@ -1178,6 +1178,9 @@ int cs_chat (int client_fd) {
 
     return 1; // hmm
   }
+
+  message = mutf8_encode_buf;
+  message_len = message_len;
   #else
   uint16_t filtered_message_len = 0;
 
@@ -1218,11 +1221,7 @@ int cs_chat (int client_fd) {
     for (int i = 0; i < MAX_PLAYERS; i ++) {
       if (player_data[i].client_fd == -1) continue;
       if (player_data[i].flags & 0x20) continue;
-      #ifdef ENABLE_UNICODE_SUPPORT
-      sc_systemChat(player_data[i].client_fd, mutf8_encode_buf, encode_len);
-      #else
       sc_systemChat(player_data[i].client_fd, message, message_len);
-      #endif
     }
 
     goto cleanup;
