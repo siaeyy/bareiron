@@ -1270,7 +1270,7 @@ int cs_chat (int client_fd) {
     // Format output for sending player
     int target_len = target_end_offset - target_offset;
     memmove(message + target_len + 23, message + name_len + 24, text_len);
-    snprintf((char *)recv_buffer, sizeof(message), "§7§oYou whisper to %s:", target->name);
+    snprintf(message, sizeof(recv_buffer), "§7§oYou whisper to %s:", target->name);
     message[target_len + 22] = ' ';
     // Report back to sending player
     sc_systemChat(client_fd, message, (uint16_t)(target_len + 23 + text_len));
