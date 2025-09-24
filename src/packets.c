@@ -1203,7 +1203,7 @@ int cs_chat (int client_fd) {
   message_len = filtered_message_len;
   #endif
 
-  if (recv_buffer[0] != '!') { // Standard chat message
+  if (message[0] != '!') { // Standard chat message
 
     // Shift message contents forward to make space for player name tag
     memmove(message + name_len + 3, message, message_content_len + 1);
@@ -1237,13 +1237,13 @@ int cs_chat (int client_fd) {
     int text_offset = 0;
 
     // Skip spaces after "!msg"
-    while (recv_buffer[target_offset] == ' ') target_offset++;
+    while (message[target_offset] == ' ') target_offset++;
     target_end_offset = target_offset;
     // Extract target name
-    while (recv_buffer[target_end_offset] != ' ' && recv_buffer[target_end_offset] != '\0' && target_end_offset < 21) target_end_offset++;
+    while (message[target_end_offset] != ' ' && message[target_end_offset] != '\0' && target_end_offset < 21) target_end_offset++;
     text_offset = target_end_offset;
     // Skip spaces before message
-    while (recv_buffer[text_offset] == ' ') text_offset++;
+    while (message[text_offset] == ' ') text_offset++;
 
     // Send usage guide if arguments are missing
     if (target_offset == target_end_offset || target_end_offset == text_offset) {
@@ -1252,7 +1252,7 @@ int cs_chat (int client_fd) {
     }
 
     // Query the target player
-    PlayerData *target = getPlayerByName(target_offset, target_end_offset, recv_buffer);
+    PlayerData *target = getPlayerByName(target_offset, target_end_offset, message);
     if (target == NULL) {
       sc_systemChat(client_fd, "Player not found", 16);
       goto cleanup;
@@ -1261,24 +1261,24 @@ int cs_chat (int client_fd) {
     // Format output as a vanilla whisper
     int name_len = strlen(player->name);
     int text_len = message_len - text_offset;
-    memmove(recv_buffer + name_len + 24, recv_buffer + text_offset, text_len);
-    snprintf((char *)recv_buffer, sizeof(recv_buffer), "§7§o%s whispers to you:", player->name);
-    recv_buffer[name_len + 23] = ' ';
+    memmove(message + name_len + 24, message + text_offset, text_len);
+    snprintf(message, sizeof(recv_buffer), "§7§o%s whispers to you:", player->name);
+    message[name_len + 23] = ' ';
     // Send message to target player
-    sc_systemChat(target->client_fd, (char *)recv_buffer, (uint16_t)(name_len + 24 + text_len));
+    sc_systemChat(target->client_fd, message, (uint16_t)(name_len + 24 + text_len));
 
     // Format output for sending player
     int target_len = target_end_offset - target_offset;
-    memmove(recv_buffer + target_len + 23, recv_buffer + name_len + 24, text_len);
-    snprintf((char *)recv_buffer, sizeof(recv_buffer), "§7§oYou whisper to %s:", target->name);
-    recv_buffer[target_len + 22] = ' ';
+    memmove(message + target_len + 23, message + name_len + 24, text_len);
+    snprintf((char *)recv_buffer, sizeof(message), "§7§oYou whisper to %s:", target->name);
+    message[target_len + 22] = ' ';
     // Report back to sending player
-    sc_systemChat(client_fd, (char *)recv_buffer, (uint16_t)(target_len + 23 + text_len));
+    sc_systemChat(client_fd, message, (uint16_t)(target_len + 23 + text_len));
 
     goto cleanup;
   }
 
-  if (!strncmp((char *)recv_buffer, "!help", 5)) {
+  if (!strncmp(message, "!help", 5)) {
     // Send command guide
     const char help_msg[] = "§7Commands:\n"
     "  !msg <player> <message> - Send a private message\n"
