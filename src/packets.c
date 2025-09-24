@@ -1139,7 +1139,7 @@ int cs_chat (int client_fd) {
   message_content_len = last_valid_len;
 
   char* message = (char *)recv_buffer;
-  uint16_t message_len = message_content_len + name_len + 3;
+  uint16_t message_len = message_content_len;
 
   #ifdef ENABLE_UNICODE_SUPPORT
   // 16 byte for player name
@@ -1180,7 +1180,7 @@ int cs_chat (int client_fd) {
   }
 
   message = mutf8_encode_buf;
-  message_len = message_len;
+  message_len = encode_len;
   #else
   uint16_t filtered_message_len = 0;
 
@@ -1209,13 +1209,14 @@ int cs_chat (int client_fd) {
   if (message[0] != '!') { // Standard chat message
 
     // Shift message contents forward to make space for player name tag
-    memmove(message + name_len + 3, message, message_content_len + 1);
+    memmove(message + name_len + 3, message, message_len + 1);
     // Copy player name to index 1
     memcpy(message + 1, player->name, name_len);
     // Surround player name with brackets and a space
     message[0] = '<';
     message[name_len + 1] = '>';
     message[name_len + 2] = ' ';
+    message_len += name_len + 3;
 
     // Forward message to all connected players
     for (int i = 0; i < MAX_PLAYERS; i ++) {
